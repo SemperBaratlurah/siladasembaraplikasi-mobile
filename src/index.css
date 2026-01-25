@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* SILADA-SEMBAR Design System */
+    --background: 210 40% 98%;
+    --foreground: 213 39% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 39% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 39% 15%;
+
+    /* Navy Blue Primary */
+    --primary: 213 55% 20%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Teal/Cyan Secondary */
+    --secondary: 187 70% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 213 30% 45%;
+
+    /* Light blue accent */
+    --accent: 200 80% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 55% 20%;
+
+    --radius: 0.75rem;
+
+    /* Custom SILADA colors */
+    --navy-dark: 213 60% 12%;
+    --navy: 213 55% 20%;
+    --navy-light: 213 50% 30%;
+    --teal: 187 70% 45%;
+    --teal-light: 187 60% 55%;
+    --cyan: 195 85% 55%;
+    --sky: 200 90% 70%;
+    --sky-light: 200 100% 90%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(213 60% 18%) 0%, hsl(213 55% 28%) 50%, hsl(195 70% 40%) 100%);
+    --gradient-header: linear-gradient(90deg, hsl(213 60% 15%) 0%, hsl(213 55% 22%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(200 90% 95%) 0%, hsl(0 0% 100%) 100%);
+    --gradient-sidebar: linear-gradient(180deg, hsl(213 60% 15%) 0%, hsl(213 55% 20%) 100%);
+
+    /* Shadows */
+    --shadow-card: 0 4px 20px -4px hsl(213 55% 20% / 0.15);
+    --shadow-hover: 0 8px 30px -6px hsl(213 55% 20% / 0.25);
+    --shadow-button: 0 4px 14px -3px hsl(187 70% 45% / 0.4);
+
+    /* Sidebar */
+    --sidebar-background: 213 60% 15%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 187 70% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 213 50% 25%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 213 50% 25%;
+    --sidebar-ring: 187 70% 45%;
+  }
+
+  .dark {
+    --background: 213 60% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 213 55% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 213 55% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 187 70% 50%;
+    --primary-foreground: 213 60% 10%;
+
+    --secondary: 213 50% 25%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 213 50% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 200 80% 55%;
+    --accent-foreground: 213 60% 10%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 213 50% 20%;
+    --input: 213 50% 20%;
+    --ring: 187 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-header {
+    background: var(--gradient-header);
+  }
+
+  .gradient-sidebar {
+    background: var(--gradient-sidebar);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .card-service {
+    @apply bg-white rounded-xl p-6 shadow-card transition-all duration-300;
+  }
+
+  .card-service:hover {
+    @apply shadow-hover -translate-y-1;
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(187 70% 50%) 0%, hsl(200 90% 70%) 100%);
+  }
+
+  .blob-decoration {
+    @apply absolute rounded-full opacity-20 blur-3xl;
+    background: radial-gradient(circle, hsl(200 90% 70%) 0%, transparent 70%);
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 6s ease-in-out infinite 2s;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+}
