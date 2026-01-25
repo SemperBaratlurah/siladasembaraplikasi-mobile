@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ExternalLink } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -15,11 +15,11 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import AdminSidebar from "@/components/AdminSidebar";
-import AdminHeader from "@/components/AdminHeader";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import AdminMobileLayout from "@/components/AdminMobileLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
@@ -27,10 +27,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useAdminServices, CreateServiceInput, Service } from "@/hooks/useAdminServices";
 import { toast } from "sonner";
-import DraggableServiceRow from "@/components/admin/DraggableServiceRow";
-import DynamicIcon, { availableIcons } from "@/components/DynamicIcon";
+import DynamicIcon from "@/components/DynamicIcon";
+import { GripVertical, Edit2, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 const iconOptions = [
   "Globe", "FileText", "ClipboardList", "UserCheck", "Building2", "FileSearch", 
@@ -50,8 +52,93 @@ const categoryOptions = [
   { value: "lainnya", label: "Lainnya" },
 ];
 
+interface SortableServiceCardProps {
+  service: Service;
+  onEdit: (service: Service) => void;
+  onDelete: (service: Service) => void;
+}
+
+const SortableServiceCard = ({ service, onEdit, onDelete }: SortableServiceCardProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: service.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="mobile-card"
+    >
+      <div className="flex items-start gap-3">
+        {/* Drag Handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="mt-1 p-1 text-muted-foreground touch-none"
+        >
+          <GripVertical className="w-5 h-5" />
+        </button>
+
+        {/* Icon */}
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <DynamicIcon name={service.icon} className="w-5 h-5 text-primary" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-foreground text-sm truncate">
+              {service.name}
+            </h3>
+            {service.external_url && (
+              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={service.is_active ? "default" : "secondary"} className="text-xs">
+              {service.is_active ? "Aktif" : "Nonaktif"}
+            </Badge>
+            <span className="text-xs text-muted-foreground">{service.click_count} klik</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 h-9"
+          onClick={() => onEdit(service)}
+        >
+          <Edit2 className="w-4 h-4 mr-1" />
+          Edit
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 text-destructive hover:text-destructive"
+          onClick={() => onDelete(service)}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const AdminServices = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -77,8 +164,7 @@ const AdminServices = () => {
   );
 
   const filteredServices = services.filter(service =>
-    service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (service.description?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+    service.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleOpenDialog = (service?: Service) => {
@@ -161,103 +247,87 @@ const AdminServices = () => {
           updateService.mutateAsync({ id: service.id, display_order: index })
         )
       );
-      toast.success("Urutan layanan berhasil diperbarui");
+      toast.success("Urutan berhasil diperbarui");
     } catch (error) {
-      toast.error("Gagal memperbarui urutan layanan");
+      toast.error("Gagal memperbarui urutan");
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Layanan Digital</h1>
-              <p className="text-muted-foreground text-sm">Admin &gt; Layanan Digital • Drag untuk mengubah urutan</p>
-            </div>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <Plus className="w-4 h-4" /> Tambah Layanan
-            </Button>
-          </div>
+    <AdminMobileLayout title="Layanan Digital">
+      {/* Search & Add */}
+      <div className="px-4 py-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari layanan..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 bg-muted/50 border-0 rounded-xl"
+          />
+        </div>
+        <Button 
+          className="w-full h-11 rounded-xl"
+          onClick={() => handleOpenDialog()}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Tambah Layanan
+        </Button>
+        <p className="text-xs text-muted-foreground text-center">
+          Seret untuk mengubah urutan
+        </p>
+      </div>
 
-          <div className="bg-white rounded-xl shadow-card p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Cari layanan..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+      {/* Services List */}
+      <div className="px-4 pb-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="mobile-card flex gap-3">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
               </div>
-            </div>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Nama Layanan</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>URL</TableHead>
-                    <TableHead>Klik</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                      <TableRow key={i}>
-                        <td><Skeleton className="h-4 w-8" /></td>
-                        <td><Skeleton className="h-4 w-40" /></td>
-                        <td><Skeleton className="h-4 w-24" /></td>
-                        <td><Skeleton className="h-4 w-32" /></td>
-                        <td><Skeleton className="h-4 w-12" /></td>
-                        <td><Skeleton className="h-4 w-16" /></td>
-                        <td><Skeleton className="h-4 w-20" /></td>
-                      </TableRow>
-                    ))
-                  ) : filteredServices.length === 0 ? (
-                    <TableRow>
-                      <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                        {searchQuery ? "Tidak ada layanan yang ditemukan" : "Belum ada layanan. Klik tombol Tambah Layanan untuk membuat layanan baru."}
-                      </td>
-                    </TableRow>
-                  ) : (
-                    <SortableContext items={filteredServices.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                      {filteredServices.map((service) => (
-                        <DraggableServiceRow
-                          key={service.id}
-                          service={service}
-                          onEdit={handleOpenDialog}
-                          onDelete={(s) => { setDeletingService(s); setDeleteDialogOpen(true); }}
-                        />
-                      ))}
-                    </SortableContext>
-                  )}
-                </TableBody>
-              </Table>
-            </DndContext>
+            ))}
           </div>
-        </main>
+        ) : filteredServices.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              {searchQuery ? "Tidak ada layanan ditemukan" : "Belum ada layanan"}
+            </p>
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={filteredServices.map(s => s.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {filteredServices.map((service) => (
+                  <SortableServiceCard
+                    key={service.id}
+                    service={service}
+                    onEdit={handleOpenDialog}
+                    onDelete={(s) => {
+                      setDeletingService(s);
+                      setDeleteDialogOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
 
       {/* Dialog Form */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingService ? "Edit Layanan" : "Tambah Layanan Baru"}</DialogTitle>
+            <DialogTitle>{editingService ? "Edit Layanan" : "Tambah Layanan"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -273,7 +343,7 @@ const AdminServices = () => {
               <Textarea
                 value={formData.description || ""}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Deskripsi singkat layanan..."
+                placeholder="Deskripsi singkat..."
                 rows={3}
               />
             </div>
@@ -322,15 +392,6 @@ const AdminServices = () => {
                 onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
                 placeholder="https://example.com/layanan"
               />
-              <p className="text-xs text-muted-foreground">Kosongkan jika layanan adalah halaman internal</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Urutan Tampil</Label>
-              <Input
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-              />
             </div>
             <div className="flex items-center gap-3">
               <Switch
@@ -355,18 +416,18 @@ const AdminServices = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Layanan</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus layanan "{deletingService?.name}"? Tindakan ini tidak dapat dibatalkan.
+              Yakin hapus layanan "{deletingService?.name}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminMobileLayout>
   );
 };
 

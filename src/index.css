@@ -187,4 +187,61 @@
       transform: translateY(-20px);
     }
   }
+
+  /* Mobile App Styles */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile Card Styles */
+  .mobile-card {
+    @apply bg-card rounded-2xl p-4 shadow-sm border border-border/50;
+  }
+
+  .mobile-card-interactive {
+    @apply mobile-card transition-all duration-200 active:scale-[0.98];
+  }
+
+  /* Touch Feedback */
+  .touch-feedback {
+    @apply transition-transform active:scale-95;
+  }
+
+  /* Chip/Badge Styles */
+  .chip {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .chip-primary {
+    @apply chip bg-primary/10 text-primary;
+  }
+
+  .chip-secondary {
+    @apply chip bg-secondary/10 text-secondary;
+  }
+
+  /* Skeleton pulse animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
 }
