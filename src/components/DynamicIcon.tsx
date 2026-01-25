@@ -1,5 +1,6 @@
 import * as LucideIcons from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { forwardRef } from "react";
 
 // Map of icon name strings to Lucide components
 const iconMap: Record<string, LucideIcon> = {
@@ -218,16 +219,21 @@ interface DynamicIconProps {
   strokeWidth?: number;
 }
 
-const DynamicIcon = ({ name, className = "", size, strokeWidth }: DynamicIconProps) => {
-  const IconComponent = iconMap[name] || LucideIcons.FileText;
-  
-  return (
-    <IconComponent 
-      className={className} 
-      size={size}
-      strokeWidth={strokeWidth}
-    />
-  );
-};
+const DynamicIcon = forwardRef<SVGSVGElement, DynamicIconProps>(
+  ({ name, className = "", size, strokeWidth }, ref) => {
+    const IconComponent = iconMap[name] || LucideIcons.FileText;
+    
+    return (
+      <IconComponent 
+        ref={ref}
+        className={className} 
+        size={size}
+        strokeWidth={strokeWidth}
+      />
+    );
+  }
+);
+
+DynamicIcon.displayName = "DynamicIcon";
 
 export default DynamicIcon;
