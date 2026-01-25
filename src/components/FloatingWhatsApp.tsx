@@ -42,7 +42,7 @@ const FloatingWhatsApp = () => {
         }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 left-6 z-50 cursor-pointer"
+        className="fixed bottom-24 left-4 z-50 cursor-pointer"
         onClick={handleClick}
       >
         <div className="relative">

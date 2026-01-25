@@ -108,8 +108,7 @@ const FloatingChatBot = () => {
             }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 cursor-grab active:cursor-grabbing"
-            onClick={() => setIsOpen(true)}
+            className="fixed bottom-24 right-4 z-50 cursor-grab active:cursor-grabbing"
           >
             <div className="relative">
               {/* Glow effect */}
@@ -158,7 +157,7 @@ const FloatingChatBot = () => {
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 w-[350px] h-[500px] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
+            className="fixed bottom-24 right-4 left-4 z-50 max-w-[400px] max-h-[70vh] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing mx-auto"
           >
             {/* Header - Drag Handle */}
             <div 

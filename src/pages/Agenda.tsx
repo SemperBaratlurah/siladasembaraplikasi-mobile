@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { CalendarDays, MapPin, Clock, ChevronRight, Filter } from "lucide-react";
+import { CalendarDays, MapPin, Clock, ChevronRight, List, CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import MobileLayout from "@/components/MobileLayout";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   usePublicEvents,
   eventCategories,
@@ -24,7 +24,7 @@ const Agenda = () => {
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [activeCategory, setActiveCategory] = useState("all");
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("list");
 
   const { events, isLoading } = usePublicEvents(activeCategory === "all" ? undefined : activeCategory);
 
@@ -36,18 +36,13 @@ const Agenda = () => {
   const upcomingEvents = useMemo(() => getUpcomingEvents(events), [events]);
   const eventDates = useMemo(() => getEventDates(events), [events]);
 
-  const filteredEvents = useMemo(() => {
-    if (activeCategory === "all") return upcomingEvents;
-    return upcomingEvents.filter((e) => e.category === activeCategory);
-  }, [upcomingEvents, activeCategory]);
-
   const getCategoryColor = (category: string | null) => {
     const colors: Record<string, string> = {
-      musyawarah: "bg-blue-500/20 text-blue-600 border-blue-500/30",
-      kesehatan: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30",
-      sosial: "bg-amber-500/20 text-amber-600 border-amber-500/30",
-      pendidikan: "bg-purple-500/20 text-purple-600 border-purple-500/30",
-      olahraga: "bg-rose-500/20 text-rose-600 border-rose-500/30",
+      musyawarah: "bg-blue-500/20 text-blue-600",
+      kesehatan: "bg-emerald-500/20 text-emerald-600",
+      sosial: "bg-amber-500/20 text-amber-600",
+      pendidikan: "bg-purple-500/20 text-purple-600",
+      olahraga: "bg-rose-500/20 text-rose-600",
     };
     return colors[category || ""] || "bg-muted text-muted-foreground";
   };
@@ -57,263 +52,212 @@ const Agenda = () => {
     return eventCategories.find((c) => c.id === categoryId)?.label || categoryId;
   };
 
-  const EventCard = ({ event, compact = false }: { event: PublicEvent; compact?: boolean }) => (
-    <Link to={`/agenda/${event.slug}`} className="block">
-      <div className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-all p-4 cursor-pointer">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", getCategoryColor(event.category))}>
-                {getCategoryLabel(event.category)}
-              </span>
-            </div>
-            <h3 className="font-semibold text-foreground hover:text-primary transition-colors mb-1">{event.title}</h3>
-            {!compact && event.excerpt && (
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {event.excerpt}
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              {event.event_date && (
-                <span className="flex items-center gap-1">
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  {format(new Date(event.event_date), "d MMMM yyyy", { locale: id })}
-                </span>
-              )}
-              {event.event_time && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  {event.event_time}
-                </span>
-              )}
-              {event.event_location && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {event.event_location}
-                </span>
-              )}
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-        </div>
-      </div>
-    </Link>
-  );
-
-  const renderSkeletons = () => (
-    <div className="space-y-4">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="bg-card rounded-xl border p-4">
-          <Skeleton className="h-4 w-20 mb-2" />
-          <Skeleton className="h-6 w-3/4 mb-2" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <MobileLayout title="Agenda">
+      {/* View Toggle */}
+      <div className="px-4 pt-4 pb-2 flex gap-2">
+        <button
+          onClick={() => setViewMode("list")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors",
+            viewMode === "list"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          <List className="w-4 h-4" />
+          Daftar
+        </button>
+        <button
+          onClick={() => setViewMode("calendar")}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors",
+            viewMode === "calendar"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="w-4 h-4" />
+          Kalender
+        </button>
+      </div>
 
-      {/* Hero Section */}
-      <section className="gradient-hero py-12 md:py-16">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Agenda & Kegiatan
-            </h1>
-            <p className="text-white/80 text-lg">
-              Jadwal kegiatan dan acara di Kelurahan Semper Barat
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* View Toggle & Categories */}
-      <section className="py-6 border-b bg-card">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* View Toggle */}
-            <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+      {/* Categories */}
+      <div className="border-b border-border">
+        <ScrollArea className="w-full">
+          <div className="flex px-4 py-3 gap-2">
+            {eventCategories.map((category) => (
               <button
-                onClick={() => setViewMode("calendar")}
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                  viewMode === "calendar"
-                    ? "bg-background shadow text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                  "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                  activeCategory === category.id
+                    ? "bg-secondary text-secondary-foreground"
+                    : "bg-muted text-muted-foreground"
                 )}
               >
-                Kalender
+                {category.label}
               </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                  viewMode === "list"
-                    ? "bg-background shadow text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Daftar
-              </button>
-            </div>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
 
-            {/* Categories */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {eventCategories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                    activeCategory === category.id
-                      ? "bg-secondary text-white"
-                      : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                  )}
-                >
-                  {category.label}
-                </button>
+      {viewMode === "calendar" ? (
+        <div className="px-4 py-4">
+          {/* Calendar */}
+          <div className="mobile-card mb-4">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              locale={id}
+              className="w-full"
+              modifiers={{
+                hasEvent: eventDates,
+              }}
+              modifiersStyles={{
+                hasEvent: {
+                  fontWeight: "bold",
+                  backgroundColor: "hsl(var(--secondary) / 0.15)",
+                  color: "hsl(var(--secondary))",
+                },
+              }}
+            />
+          </div>
+
+          {/* Events on selected date */}
+          <h3 className="font-semibold text-foreground mb-3">
+            {selectedDate
+              ? format(selectedDate, "EEEE, d MMMM yyyy", { locale: id })
+              : "Pilih tanggal"}
+          </h3>
+          
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="mobile-card">
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-5 w-3/4" />
+                </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <section className="py-8 md:py-12">
-        <div className="container mx-auto px-4">
-          {viewMode === "calendar" ? (
-            <div className="grid lg:grid-cols-[400px_1fr] gap-8">
-              {/* Calendar */}
-              <div className="bg-card rounded-2xl shadow-card p-6">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  locale={id}
-                  className="pointer-events-auto"
-                  modifiers={{
-                    hasEvent: eventDates,
-                  }}
-                  modifiersStyles={{
-                    hasEvent: {
-                      fontWeight: "bold",
-                      backgroundColor: "hsl(var(--secondary) / 0.1)",
-                      color: "hsl(var(--secondary))",
-                    },
-                  }}
-                />
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-secondary/20"></span>
-                    Tanggal dengan kegiatan
-                  </p>
-                </div>
-              </div>
-
-              {/* Events for Selected Date */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">
-                  {selectedDate
-                    ? format(selectedDate, "EEEE, d MMMM yyyy", { locale: id })
-                    : "Pilih tanggal"}
-                </h2>
-                {isLoading ? (
-                  renderSkeletons()
-                ) : (
-                  <AnimatePresence mode="wait">
-                    {eventsOnSelectedDate.length > 0 ? (
-                      <motion.div
-                        key={selectedDate?.toISOString()}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="space-y-4"
-                      >
-                        {eventsOnSelectedDate.map((event) => (
-                          <EventCard key={event.id} event={event} />
-                        ))}
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="bg-muted/50 rounded-xl p-8 text-center"
-                      >
-                        <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                        <p className="text-muted-foreground">
-                          Tidak ada kegiatan pada tanggal ini
-                        </p>
-                      </motion.div>
+          ) : eventsOnSelectedDate.length > 0 ? (
+            <div className="space-y-3">
+              {eventsOnSelectedDate.map((event) => (
+                <Link key={event.id} to={`/agenda/${event.slug}`} className="mobile-card-interactive block">
+                  <span className={cn("inline-block px-2 py-0.5 rounded-full text-xs font-medium mb-2", getCategoryColor(event.category))}>
+                    {getCategoryLabel(event.category)}
+                  </span>
+                  <h4 className="font-semibold text-foreground text-sm mb-2">{event.title}</h4>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    {event.event_time && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {event.event_time}
+                      </span>
                     )}
-                  </AnimatePresence>
-                )}
-
-                {/* Upcoming Events Preview */}
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Kegiatan Mendatang
-                  </h3>
-                  {isLoading ? (
-                    renderSkeletons()
-                  ) : upcomingEvents.length > 0 ? (
-                    <div className="space-y-3">
-                      {upcomingEvents.slice(0, 3).map((event) => (
-                        <EventCard key={event.id} event={event} compact />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                      Belum ada kegiatan mendatang
-                    </p>
-                  )}
-                </div>
-              </div>
+                    {event.event_location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {event.event_location}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))}
             </div>
           ) : (
-            /* List View */
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-foreground">
-                  Semua Kegiatan ({filteredEvents.length})
-                </h2>
-              </div>
-              {isLoading ? (
-                renderSkeletons()
-              ) : filteredEvents.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredEvents.map((event, index) => (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <EventCard event={event} />
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-muted/50 rounded-xl p-12 text-center">
-                  <Filter className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">
-                    Tidak ada kegiatan dalam kategori ini
-                  </p>
-                </div>
-              )}
+            <div className="mobile-card text-center py-8">
+              <CalendarDays className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-sm">Tidak ada kegiatan</p>
             </div>
           )}
         </div>
-      </section>
+      ) : (
+        /* List View */
+        <div className="px-4 py-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="mobile-card flex gap-4">
+                  <Skeleton className="w-14 h-14 rounded-xl flex-shrink-0" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : upcomingEvents.length > 0 ? (
+            <div className="space-y-3">
+              {upcomingEvents.map((event, index) => {
+                const eventDate = event.event_date ? new Date(event.event_date) : null;
+                
+                return (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link
+                      to={`/agenda/${event.slug}`}
+                      className="mobile-card-interactive flex gap-4"
+                    >
+                      {/* Date Badge */}
+                      {eventDate && (
+                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex flex-col items-center justify-center flex-shrink-0">
+                          <span className="text-lg font-bold text-primary leading-none">
+                            {format(eventDate, "dd")}
+                          </span>
+                          <span className="text-xs text-primary/80 uppercase">
+                            {format(eventDate, "MMM", { locale: id })}
+                          </span>
+                        </div>
+                      )}
 
-      <Footer />
-    </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <span className={cn("inline-block px-2 py-0.5 rounded-full text-xs font-medium mb-1", getCategoryColor(event.category))}>
+                          {getCategoryLabel(event.category)}
+                        </span>
+                        <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2 mb-1">
+                          {event.title}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {event.event_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {event.event_time}
+                            </span>
+                          )}
+                          {event.event_location && (
+                            <span className="flex items-center gap-1 truncate">
+                              <MapPin className="w-3 h-3" />
+                              {event.event_location}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 self-center" />
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mobile-card text-center py-12">
+              <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Belum ada kegiatan mendatang</p>
+            </div>
+          )}
+        </div>
+      )}
+    </MobileLayout>
   );
 };
 
