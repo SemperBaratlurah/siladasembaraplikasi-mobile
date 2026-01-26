@@ -29,7 +29,7 @@ export const eventCategories = [
 export const usePublicEvents = (category?: string) => {
   const queryClient = useQueryClient();
 
-  const { data: events, isLoading, error } = useQuery({
+  const { data: events, isLoading, error, refetch } = useQuery({
     queryKey: ["public-events", category],
     queryFn: async () => {
       let query = supabase
@@ -77,7 +77,7 @@ export const usePublicEvents = (category?: string) => {
     };
   }, [queryClient]);
 
-  return { events: events || [], isLoading, error };
+  return { events: events || [], isLoading, error, refetch };
 };
 
 export const getUpcomingEvents = (events: PublicEvent[]): PublicEvent[] => {

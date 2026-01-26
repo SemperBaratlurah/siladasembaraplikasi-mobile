@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Megaphone, Calendar } from "lucide-react";
 import MobileLayout from "@/components/MobileLayout";
+import PullToRefresh from "@/components/PullToRefresh";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { usePublicAnnouncements } from "@/hooks/usePublicAnnouncements";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useVisitTracker } from "@/hooks/useVisitTracker";
+import { toast } from "sonner";
 
 const Pengumuman = () => {
   useVisitTracker("pengumuman");
@@ -19,7 +21,7 @@ const Pengumuman = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  const { announcements, isLoading } = usePublicAnnouncements();
+  const { announcements, isLoading, refetch } = usePublicAnnouncements();
 
   const filteredAnnouncements = useMemo(() => {
     if (!searchQuery.trim()) return announcements;
@@ -42,6 +44,11 @@ const Pengumuman = () => {
     setSearchQuery(value);
     setCurrentPage(1);
   };
+
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+    toast.success("Data berhasil diperbarui");
+  }, [refetch]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "";
@@ -144,72 +151,74 @@ const Pengumuman = () => {
           </p>
         )}
 
-        {/* Announcements List */}
-        {isLoading ? (
-          renderSkeletons()
-        ) : paginatedAnnouncements.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Megaphone className="w-8 h-8 text-muted-foreground" />
+        {/* Announcements List with Pull to Refresh */}
+        <PullToRefresh onRefresh={handleRefresh}>
+          {isLoading ? (
+            renderSkeletons()
+          ) : paginatedAnnouncements.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Megaphone className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-2">
+                Tidak ada pengumuman
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery
+                  ? "Coba ubah kata kunci pencarian Anda"
+                  : "Belum ada pengumuman yang dipublikasikan"}
+              </p>
             </div>
-            <h3 className="text-base font-semibold text-foreground mb-2">
-              Tidak ada pengumuman
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {searchQuery
-                ? "Coba ubah kata kunci pencarian Anda"
-                : "Belum ada pengumuman yang dipublikasikan"}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {paginatedAnnouncements.map((item, index) => (
-              <motion.article
-                key={item.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: index * 0.03 }}
-              >
-                <Link
-                  to={`/pengumuman/${item.slug}`}
-                  className="flex gap-3 bg-card rounded-xl shadow-card overflow-hidden p-3 active:scale-[0.98] transition-transform"
+          ) : (
+            <div className="space-y-3">
+              {paginatedAnnouncements.map((item, index) => (
+                <motion.article
+                  key={item.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.03 }}
                 >
-                  {/* Image or Placeholder */}
-                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
-                        <Megaphone className="w-8 h-8 text-secondary/50" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 mb-1.5">
-                      Pengumuman
-                    </Badge>
-
-                    <h3 className="font-semibold text-foreground text-sm line-clamp-2 mb-1">
-                      {item.title}
-                    </h3>
-
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                      <Calendar className="w-3 h-3" />
-                      <span>
-                        {formatDate(item.published_at || item.created_at)}
-                      </span>
+                  <Link
+                    to={`/pengumuman/${item.slug}`}
+                    className="flex gap-3 bg-card rounded-xl shadow-card overflow-hidden p-3 active:scale-[0.98] transition-transform"
+                  >
+                    {/* Image or Placeholder */}
+                    <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
+                          <Megaphone className="w-8 h-8 text-secondary/50" />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </Link>
-              </motion.article>
-            ))}
-          </div>
-        )}
+
+                    <div className="flex-1 min-w-0">
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5 mb-1.5">
+                        Pengumuman
+                      </Badge>
+
+                      <h3 className="font-semibold text-foreground text-sm line-clamp-2 mb-1">
+                        {item.title}
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                        <Calendar className="w-3 h-3" />
+                        <span>
+                          {formatDate(item.published_at || item.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.article>
+              ))}
+            </div>
+          )}
+        </PullToRefresh>
 
         {/* Pagination */}
         {renderPagination()}

@@ -25,7 +25,7 @@ export const newsCategories = [
 export const usePublicNews = (category?: string) => {
   const queryClient = useQueryClient();
 
-  const { data: articles, isLoading, error } = useQuery({
+  const { data: articles, isLoading, error, refetch } = useQuery({
     queryKey: ["public-news", category],
     queryFn: async () => {
       let query = supabase
@@ -74,7 +74,7 @@ export const usePublicNews = (category?: string) => {
     };
   }, [queryClient]);
 
-  return { articles: articles || [], isLoading, error };
+  return { articles: articles || [], isLoading, error, refetch };
 };
 
 export const usePublicNewsArticle = (slug: string) => {
