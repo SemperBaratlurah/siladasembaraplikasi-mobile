@@ -1,17 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Calendar, Clock, ChevronRight, ChevronLeft, Search } from "lucide-react";
+import { Calendar, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MobileLayout from "@/components/MobileLayout";
+import PullToRefresh from "@/components/PullToRefresh";
 import { usePublicNews, newsCategories } from "@/hooks/usePublicNews";
 import { useVisitTracker } from "@/hooks/useVisitTracker";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 const News = () => {
   useVisitTracker("berita");
@@ -19,7 +20,7 @@ const News = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { articles, isLoading } = usePublicNews(activeCategory);
+  const { articles, isLoading, refetch } = usePublicNews(activeCategory);
 
   const filteredArticles = useMemo(() => {
     return articles.filter(
@@ -32,6 +33,11 @@ const News = () => {
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
   };
+
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+    toast.success("Data berhasil diperbarui");
+  }, [refetch]);
 
   const getCategoryLabel = (categoryId: string | null) => {
     if (!categoryId) return "Umum";
@@ -86,8 +92,8 @@ const News = () => {
         </ScrollArea>
       </div>
 
-      {/* Articles */}
-      <div className="px-4 py-4">
+      {/* Articles with Pull to Refresh */}
+      <PullToRefresh onRefresh={handleRefresh} className="px-4 py-4">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
@@ -153,7 +159,7 @@ const News = () => {
             ))}
           </div>
         )}
-      </div>
+      </PullToRefresh>
     </MobileLayout>
   );
 };

@@ -16,7 +16,7 @@ export interface PublicAnnouncement {
 export const usePublicAnnouncements = () => {
   const queryClient = useQueryClient();
 
-  const { data: announcements, isLoading, error } = useQuery({
+  const { data: announcements, isLoading, error, refetch } = useQuery({
     queryKey: ["public-announcements"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,5 +59,5 @@ export const usePublicAnnouncements = () => {
     };
   }, [queryClient]);
 
-  return { announcements: announcements || [], isLoading, error };
+  return { announcements: announcements || [], isLoading, error, refetch };
 };
