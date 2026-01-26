@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Megaphone, Calendar } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import MobileLayout from "@/components/MobileLayout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,14 +53,16 @@ const Pengumuman = () => {
   };
 
   const renderSkeletons = () => (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-card rounded-xl shadow-card overflow-hidden">
-          <Skeleton className="h-40 w-full" />
-          <div className="p-5 space-y-3">
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
+    <div className="space-y-3">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-card rounded-xl shadow-card overflow-hidden p-4">
+          <div className="flex gap-3">
+            <Skeleton className="h-20 w-20 rounded-lg flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
           </div>
         </div>
       ))}
@@ -71,61 +72,48 @@ const Pengumuman = () => {
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
-    const pages = [];
-    const showEllipsisStart = currentPage > 3;
-    const showEllipsisEnd = currentPage < totalPages - 2;
-
-    if (showEllipsisStart) {
-      pages.push(1);
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      if (!pages.includes(i)) {
-        pages.push(i);
-      }
-    }
-
-    if (showEllipsisEnd) {
-      pages.push("...");
-      pages.push(totalPages);
-    }
-
     return (
-      <div className="flex justify-center gap-2 mt-8">
+      <div className="flex justify-center gap-2 mt-6">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
           disabled={currentPage === 1}
+          className="text-xs"
         >
           Sebelumnya
         </Button>
-        {pages.map((page, index) =>
-          page === "..." ? (
-            <span key={`ellipsis-${index}`} className="px-3 py-2">
-              ...
-            </span>
-          ) : (
-            <Button
-              key={page}
-              variant={currentPage === page ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCurrentPage(page as number)}
-            >
-              {page}
-            </Button>
-          )
-        )}
+        <div className="flex items-center gap-1">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(pageNum)}
+                className="w-8 h-8 p-0 text-xs"
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+        </div>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           disabled={currentPage === totalPages}
+          className="text-xs"
         >
           Selanjutnya
         </Button>
@@ -134,130 +122,99 @@ const Pengumuman = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <MobileLayout title="Pengumuman" showSearch={false}>
+      <div className="px-4 py-4">
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Cari pengumuman..."
+            className="pl-10 h-10 rounded-xl bg-card border-border"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+        </div>
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="gradient-hero py-12 md:py-16">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center max-w-3xl mx-auto"
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 mb-4">
-                <Megaphone className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Pengumuman
-              </h1>
-              <p className="text-white/80 mb-8">
-                Informasi dan pengumuman terbaru dari kami
-              </p>
+        {/* Results count */}
+        {!isLoading && (
+          <p className="text-xs text-muted-foreground mb-4">
+            Menampilkan {paginatedAnnouncements.length} dari{" "}
+            {filteredAnnouncements.length} pengumuman
+          </p>
+        )}
 
-              {/* Search */}
-              <div className="relative max-w-md mx-auto">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Cari pengumuman..."
-                  className="pl-12 h-12 rounded-full bg-white border-0"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                />
-              </div>
-            </motion.div>
+        {/* Announcements List */}
+        {isLoading ? (
+          renderSkeletons()
+        ) : paginatedAnnouncements.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <Megaphone className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-2">
+              Tidak ada pengumuman
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {searchQuery
+                ? "Coba ubah kata kunci pencarian Anda"
+                : "Belum ada pengumuman yang dipublikasikan"}
+            </p>
           </div>
-        </section>
-
-        {/* Content */}
-        <section className="py-12 md:py-16 bg-background">
-          <div className="container mx-auto px-4">
-            {/* Results count */}
-            {!isLoading && (
-              <p className="text-muted-foreground mb-6">
-                Menampilkan {paginatedAnnouncements.length} dari{" "}
-                {filteredAnnouncements.length} pengumuman
-              </p>
-            )}
-
-            {/* Announcements Grid */}
-            {isLoading ? (
-              renderSkeletons()
-            ) : paginatedAnnouncements.length === 0 ? (
-              <div className="text-center py-12">
-                <Megaphone className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Tidak ada pengumuman
-                </h3>
-                <p className="text-muted-foreground">
-                  {searchQuery
-                    ? "Coba ubah kata kunci pencarian Anda"
-                    : "Belum ada pengumuman yang dipublikasikan"}
-                </p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedAnnouncements.map((item, index) => (
-                  <motion.article
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-card rounded-xl shadow-card overflow-hidden hover:shadow-hover transition-shadow group"
-                  >
-                    {/* Image or Placeholder */}
+        ) : (
+          <div className="space-y-3">
+            {paginatedAnnouncements.map((item, index) => (
+              <motion.article
+                key={item.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: index * 0.03 }}
+              >
+                <Link
+                  to={`/pengumuman/${item.slug}`}
+                  className="flex gap-3 bg-card rounded-xl shadow-card overflow-hidden p-3 active:scale-[0.98] transition-transform"
+                >
+                  {/* Image or Placeholder */}
+                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                     {item.image_url ? (
-                      <div className="aspect-video overflow-hidden">
-                        <img
-                          src={item.image_url}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <div className="aspect-video bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
-                        <Megaphone className="w-12 h-12 text-secondary/50" />
+                      <div className="w-full h-full bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
+                        <Megaphone className="w-8 h-8 text-secondary/50" />
                       </div>
                     )}
+                  </div>
 
-                    <div className="p-5">
-                      <Badge variant="secondary" className="mb-3">
-                        Pengumuman
-                      </Badge>
+                  <div className="flex-1 min-w-0">
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 mb-1.5">
+                      Pengumuman
+                    </Badge>
 
-                      <h3 className="font-bold text-foreground text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                        {item.title}
-                      </h3>
+                    <h3 className="font-semibold text-foreground text-sm line-clamp-2 mb-1">
+                      {item.title}
+                    </h3>
 
-                      {item.excerpt && (
-                        <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
-                          {item.excerpt}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {formatDate(item.published_at || item.created_at)}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {formatDate(item.published_at || item.created_at)}
+                      </span>
                     </div>
-                  </motion.article>
-                ))}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {renderPagination()}
+                  </div>
+                </Link>
+              </motion.article>
+            ))}
           </div>
-        </section>
-      </main>
+        )}
 
-      <Footer />
-    </div>
+        {/* Pagination */}
+        {renderPagination()}
+      </div>
+    </MobileLayout>
   );
 };
 
