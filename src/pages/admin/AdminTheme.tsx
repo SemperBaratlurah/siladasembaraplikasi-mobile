@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { Save, Palette, Sun, Moon, Type, Layout } from "lucide-react";
-import AdminSidebar from "@/components/AdminSidebar";
-import AdminHeader from "@/components/AdminHeader";
+import { Save, Palette, Type, Layout } from "lucide-react";
+import AdminMobileLayout from "@/components/AdminMobileLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSettings } from "@/hooks/useSettings";
 import { toast } from "sonner";
 
@@ -34,7 +32,6 @@ const colorPresets = [
 ];
 
 const AdminTheme = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { settings, isLoading, updateSetting, getSetting } = useSettings();
   
@@ -89,221 +86,212 @@ const AdminTheme = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Tema & Tampilan</h1>
-              <p className="text-muted-foreground text-sm">Admin &gt; Tema & Tampilan</p>
-            </div>
-            <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-              <Save className="w-4 h-4" />
-              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
-            </Button>
-          </div>
+    <AdminMobileLayout title="Tema & Tampilan" showRefresh>
+      <div className="px-4 py-4">
+        {/* Save Button */}
+        <div className="flex justify-end mb-4">
+          <Button onClick={handleSave} disabled={isSaving} size="sm" className="gap-2">
+            <Save className="w-4 h-4" />
+            {isSaving ? "Menyimpan..." : "Simpan"}
+          </Button>
+        </div>
 
-          <div className="space-y-6 max-w-4xl">
-            {/* Color Presets */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="w-5 h-5" />
-                  Preset Warna
-                </CardTitle>
-                <CardDescription>Pilih skema warna yang sudah tersedia</CardDescription>
-              </CardHeader>
-              <CardContent>
+        <div className="space-y-4">
+          {/* Color Presets */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Palette className="w-4 h-4" />
+                Preset Warna
+              </CardTitle>
+              <CardDescription className="text-xs">Pilih skema warna yang tersedia</CardDescription>
+            </CardHeader>
+            <CardContent>
               {/* Pemerintahan Indonesia */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">🇮🇩 Pemerintahan Indonesia</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {colorPresets.filter(p => p.category === 'pemerintah').map((preset) => (
-                      <button
-                        key={preset.name}
-                        onClick={() => handlePresetSelect(preset)}
-                        className={`p-3 rounded-xl border-2 transition-all hover:shadow-md ${
-                          formData.theme_primary_color === preset.primary
-                            ? "border-primary ring-2 ring-primary/20"
-                            : "border-border"
-                        }`}
-                      >
-                        <div className="flex gap-2 mb-2">
-                          <div
-                            className="w-6 h-6 rounded-full"
-                            style={{ backgroundColor: preset.primary }}
-                          />
-                          <div
-                            className="w-6 h-6 rounded-full"
-                            style={{ backgroundColor: preset.secondary }}
-                          />
-                        </div>
-                        <p className="text-xs font-medium">{preset.name}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Warna Umum */}
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">🎨 Warna Umum</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {colorPresets.filter(p => p.category === 'umum' || p.category === 'default').map((preset) => (
-                      <button
-                        key={preset.name}
-                        onClick={() => handlePresetSelect(preset)}
-                        className={`p-3 rounded-xl border-2 transition-all hover:shadow-md ${
-                          formData.theme_primary_color === preset.primary
-                            ? "border-primary ring-2 ring-primary/20"
-                            : "border-border"
-                        }`}
-                      >
-                        <div className="flex gap-2 mb-2">
-                          <div
-                            className="w-6 h-6 rounded-full"
-                            style={{ backgroundColor: preset.primary }}
-                          />
-                          <div
-                            className="w-6 h-6 rounded-full"
-                            style={{ backgroundColor: preset.secondary }}
-                          />
-                        </div>
-                        <p className="text-xs font-medium">{preset.name}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Custom Colors */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="w-5 h-5" />
-                  Warna Kustom
-                </CardTitle>
-                <CardDescription>Sesuaikan warna secara manual</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Warna Utama (Primary)</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={formData.theme_primary_color}
-                        onChange={(e) => setFormData({ ...formData, theme_primary_color: e.target.value })}
-                        className="w-16 h-10 p-1 cursor-pointer"
-                      />
-                      <Input
-                        value={formData.theme_primary_color}
-                        onChange={(e) => setFormData({ ...formData, theme_primary_color: e.target.value })}
-                        placeholder="#006666"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Warna Sekunder</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={formData.theme_secondary_color}
-                        onChange={(e) => setFormData({ ...formData, theme_secondary_color: e.target.value })}
-                        className="w-16 h-10 p-1 cursor-pointer"
-                      />
-                      <Input
-                        value={formData.theme_secondary_color}
-                        onChange={(e) => setFormData({ ...formData, theme_secondary_color: e.target.value })}
-                        placeholder="#00A19D"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layout className="w-5 h-5" />
-                  Preview
-                </CardTitle>
-                <CardDescription>Lihat tampilan dengan pengaturan saat ini</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="p-6 rounded-xl bg-muted/50">
-                  <div className="flex gap-4 items-center mb-4">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: formData.theme_primary_color }}
-                    >
-                      S
-                    </div>
-                    <div>
-                      <h3 className="font-bold" style={{ color: formData.theme_primary_color }}>
-                        SILADA-SEMBAR
-                      </h3>
-                      <p className="text-sm text-muted-foreground">Sistem Layanan Digital</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
+              <div className="mb-4">
+                <h4 className="text-xs font-medium text-muted-foreground mb-2">🇮🇩 Pemerintahan</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {colorPresets.filter(p => p.category === 'pemerintah').map((preset) => (
                     <button
-                      className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                      style={{ backgroundColor: formData.theme_primary_color }}
+                      key={preset.name}
+                      onClick={() => handlePresetSelect(preset)}
+                      className={`p-2 rounded-lg border-2 transition-all ${
+                        formData.theme_primary_color === preset.primary
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-border"
+                      }`}
                     >
-                      Tombol Primary
+                      <div className="flex gap-1.5 mb-1.5">
+                        <div
+                          className="w-5 h-5 rounded-full"
+                          style={{ backgroundColor: preset.primary }}
+                        />
+                        <div
+                          className="w-5 h-5 rounded-full"
+                          style={{ backgroundColor: preset.secondary }}
+                        />
+                      </div>
+                      <p className="text-xs font-medium truncate">{preset.name}</p>
                     </button>
-                    <button
-                      className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                      style={{ backgroundColor: formData.theme_secondary_color }}
-                    >
-                      Tombol Secondary
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Font Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Type className="w-5 h-5" />
-                  Pengaturan Font
-                </CardTitle>
-                <CardDescription>Pilih font untuk website</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label>Font Family</Label>
-                  <Select 
-                    value={formData.theme_font_family} 
-                    onValueChange={(value) => setFormData({ ...formData, theme_font_family: value })}
+              {/* Warna Umum */}
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground mb-2">🎨 Warna Umum</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {colorPresets.filter(p => p.category === 'umum' || p.category === 'default').map((preset) => (
+                    <button
+                      key={preset.name}
+                      onClick={() => handlePresetSelect(preset)}
+                      className={`p-2 rounded-lg border-2 transition-all ${
+                        formData.theme_primary_color === preset.primary
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex gap-1.5 mb-1.5">
+                        <div
+                          className="w-5 h-5 rounded-full"
+                          style={{ backgroundColor: preset.primary }}
+                        />
+                        <div
+                          className="w-5 h-5 rounded-full"
+                          style={{ backgroundColor: preset.secondary }}
+                        />
+                      </div>
+                      <p className="text-xs font-medium truncate">{preset.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Custom Colors */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Palette className="w-4 h-4" />
+                Warna Kustom
+              </CardTitle>
+              <CardDescription className="text-xs">Sesuaikan warna secara manual</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm">Warna Utama (Primary)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={formData.theme_primary_color}
+                    onChange={(e) => setFormData({ ...formData, theme_primary_color: e.target.value })}
+                    className="w-14 h-10 p-1 cursor-pointer"
+                  />
+                  <Input
+                    value={formData.theme_primary_color}
+                    onChange={(e) => setFormData({ ...formData, theme_primary_color: e.target.value })}
+                    placeholder="#006666"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Warna Sekunder</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={formData.theme_secondary_color}
+                    onChange={(e) => setFormData({ ...formData, theme_secondary_color: e.target.value })}
+                    className="w-14 h-10 p-1 cursor-pointer"
+                  />
+                  <Input
+                    value={formData.theme_secondary_color}
+                    onChange={(e) => setFormData({ ...formData, theme_secondary_color: e.target.value })}
+                    placeholder="#00A19D"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Layout className="w-4 h-4" />
+                Preview
+              </CardTitle>
+              <CardDescription className="text-xs">Tampilan dengan pengaturan saat ini</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 rounded-xl bg-muted/50">
+                <div className="flex gap-3 items-center mb-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                    style={{ backgroundColor: formData.theme_primary_color }}
                   >
-                    <SelectTrigger className="w-full max-w-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Inter">Inter</SelectItem>
-                      <SelectItem value="Poppins">Poppins</SelectItem>
-                      <SelectItem value="Roboto">Roboto</SelectItem>
-                      <SelectItem value="Open Sans">Open Sans</SelectItem>
-                      <SelectItem value="Nunito">Nunito</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    S
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm" style={{ color: formData.theme_primary_color }}>
+                      SILADA-SEMBAR
+                    </h3>
+                    <p className="text-xs text-muted-foreground">Sistem Layanan Digital</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 py-1.5 rounded-lg text-white text-xs font-medium"
+                    style={{ backgroundColor: formData.theme_primary_color }}
+                  >
+                    Primary
+                  </button>
+                  <button
+                    className="px-3 py-1.5 rounded-lg text-white text-xs font-medium"
+                    style={{ backgroundColor: formData.theme_secondary_color }}
+                  >
+                    Secondary
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Font Settings */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Type className="w-4 h-4" />
+                Pengaturan Font
+              </CardTitle>
+              <CardDescription className="text-xs">Pilih font untuk website</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label className="text-sm">Font Family</Label>
+                <Select 
+                  value={formData.theme_font_family} 
+                  onValueChange={(value) => setFormData({ ...formData, theme_font_family: value })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inter">Inter</SelectItem>
+                    <SelectItem value="Poppins">Poppins</SelectItem>
+                    <SelectItem value="Roboto">Roboto</SelectItem>
+                    <SelectItem value="Open Sans">Open Sans</SelectItem>
+                    <SelectItem value="Nunito">Nunito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </AdminMobileLayout>
   );
 };
 
