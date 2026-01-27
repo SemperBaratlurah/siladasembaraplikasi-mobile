@@ -1,24 +1,44 @@
 import { useState } from "react";
-import { Plus, Edit, Trash2, Search, FileText, Eye } from "lucide-react";
-import AdminSidebar from "@/components/AdminSidebar";
-import AdminHeader from "@/components/AdminHeader";
+import { Plus, Edit2, Trash2, Search, FileText, Eye } from "lucide-react";
+import AdminMobileLayout from "@/components/AdminMobileLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usePages, usePagesMutation, Page } from "@/hooks/usePages";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { motion } from "framer-motion";
 
 const AdminPages = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingPage, setEditingPage] = useState<Page | null>(null);
@@ -109,119 +129,140 @@ const AdminPages = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "published":
-        return <Badge className="bg-teal text-white">Terbit</Badge>;
+        return <Badge className="bg-green-500 text-white text-xs">Terbit</Badge>;
       case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
+        return <Badge variant="secondary" className="text-xs">Draft</Badge>;
       case "archived":
-        return <Badge variant="outline">Arsip</Badge>;
+        return <Badge variant="outline" className="text-xs">Arsip</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary" className="text-xs">{status}</Badge>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Halaman Website</h1>
-              <p className="text-muted-foreground text-sm">Admin &gt; Halaman Website</p>
-            </div>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <Plus className="w-4 h-4" /> Tambah Halaman
-            </Button>
-          </div>
+    <AdminMobileLayout title="Halaman Website">
+      {/* Search & Add */}
+      <div className="px-4 py-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari halaman..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 bg-muted/50 border-0 rounded-xl"
+          />
+        </div>
+        <Button 
+          className="w-full h-11 rounded-xl"
+          onClick={() => handleOpenDialog()}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Tambah Halaman
+        </Button>
+      </div>
 
-          <div className="bg-white rounded-xl shadow-card p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Cari halaman..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+      {/* Pages List */}
+      <div className="px-4 pb-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="mobile-card flex gap-3">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
               </div>
-            </div>
-
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Judul</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Terakhir Diperbarui</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : filteredPages.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {searchQuery ? "Tidak ada halaman yang ditemukan" : "Belum ada halaman. Klik tombol Tambah Halaman untuk membuat halaman baru."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredPages.map((page) => (
-                    <TableRow key={page.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{page.title}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">/{page.slug}</TableCell>
-                      <TableCell>{getStatusBadge(page.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {format(new Date(page.updated_at), "dd MMM yyyy, HH:mm", { locale: id })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {page.status === "published" && (
-                            <Button variant="ghost" size="sm" asChild>
-                              <a href={`/pages/${page.slug}`} target="_blank" rel="noopener noreferrer">
-                                <Eye className="w-4 h-4" />
-                              </a>
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(page)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => { setDeletingPage(page); setDeleteDialogOpen(true); }}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            ))}
           </div>
-        </main>
+        ) : filteredPages.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">
+              {searchQuery ? "Tidak ada halaman ditemukan" : "Belum ada halaman"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredPages.map((page, index) => (
+              <motion.div
+                key={page.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="mobile-card"
+              >
+                <div className="flex gap-3">
+                  {/* Icon */}
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground text-sm line-clamp-1 mb-1">
+                      {page.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      {getStatusBadge(page.status)}
+                      <span className="text-xs text-muted-foreground">/{page.slug}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(page.updated_at), "d MMM yyyy", { locale: id })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                  {page.status === "published" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      asChild
+                    >
+                      <a href={`/pages/${page.slug}`} target="_blank" rel="noopener noreferrer">
+                        <Eye className="w-4 h-4 mr-1" />
+                        Lihat
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9"
+                    onClick={() => handleOpenDialog(page)}
+                  >
+                    <Edit2 className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setDeletingPage(page);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Dialog Form */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingPage ? "Edit Halaman" : "Tambah Halaman Baru"}</DialogTitle>
+            <DialogDescription>
+              {editingPage ? "Perbarui informasi halaman" : "Isi form berikut untuk menambahkan halaman baru"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -281,7 +322,7 @@ const AdminPages = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Halaman</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus halaman "{deletingPage?.title}"? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus halaman "{deletingPage?.title}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -292,7 +333,7 @@ const AdminPages = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminMobileLayout>
   );
 };
 

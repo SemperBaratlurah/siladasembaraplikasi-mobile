@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Plus, Edit2, Trash2, Search, Image as ImageIcon, Star } from "lucide-react";
-import AdminSidebar from "@/components/AdminSidebar";
-import AdminHeader from "@/components/AdminHeader";
+import AdminMobileLayout from "@/components/AdminMobileLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +34,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useGallery, GalleryItem } from "@/hooks/useGallery";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 const categories = [
   { value: "kegiatan", label: "Kegiatan" },
@@ -48,7 +47,6 @@ const categories = [
 ];
 
 const AdminGallery = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -133,7 +131,6 @@ const AdminGallery = () => {
 
   const handleDelete = async () => {
     if (!deletingItem) return;
-
     try {
       await deleteGalleryItem.mutateAsync(deletingItem.id);
       toast.success("Galeri berhasil dihapus");
@@ -144,109 +141,105 @@ const AdminGallery = () => {
     }
   };
 
-  const openDeleteDialog = (item: GalleryItem) => {
-    setDeletingItem(item);
-    setIsDeleteDialogOpen(true);
-  };
-
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <AdminMobileLayout title="Galeri">
+      {/* Search & Add */}
+      <div className="px-4 py-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari galeri..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 bg-muted/50 border-0 rounded-xl"
+          />
+        </div>
+        <Button 
+          className="w-full h-11 rounded-xl"
+          onClick={() => handleOpenDialog()}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Tambah Foto
+        </Button>
+      </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
-
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Galeri</h1>
-              <p className="text-muted-foreground text-sm">Admin &gt; Galeri</p>
-            </div>
-            <Button 
-              className="bg-secondary hover:bg-secondary/90 text-white"
-              onClick={() => handleOpenDialog()}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Foto
-            </Button>
+      {/* Gallery Grid */}
+      <div className="px-4 pb-4">
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="aspect-square rounded-xl" />
+            ))}
           </div>
-
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Cari galeri..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        ) : filteredGallery.length === 0 ? (
+          <div className="text-center py-12">
+            <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">Belum ada foto di galeri</p>
           </div>
-
-          {/* Gallery Grid */}
-          {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Memuat data...
-            </div>
-          ) : filteredGallery.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Belum ada foto di galeri</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredGallery.map((item) => (
-                <div
-                  key={item.id}
-                  className="group relative bg-card rounded-xl border shadow-card overflow-hidden"
-                >
-                  <div className="aspect-square">
-                    <img
-                      src={item.image_url}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredGallery.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                className="relative group aspect-square rounded-xl overflow-hidden bg-muted"
+              >
+                <img
+                  src={item.image_url}
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white font-medium text-sm truncate">{item.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {categories.find(c => c.value === item.category)?.label || item.category}
+                      </Badge>
+                      {item.is_featured && (
+                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                      )}
+                    </div>
                   </div>
                   
-                  {/* Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white font-medium text-sm truncate">{item.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {categories.find(c => c.value === item.category)?.label || item.category}
-                        </Badge>
-                        {item.is_featured && (
-                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Actions */}
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="w-8 h-8"
-                        onClick={() => handleOpenDialog(item)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="w-8 h-8"
-                        onClick={() => openDeleteDialog(item)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  {/* Actions */}
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => handleOpenDialog(item)}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => {
+                        setDeletingItem(item);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </main>
+
+                {/* Featured indicator */}
+                {item.is_featured && (
+                  <div className="absolute top-2 left-2">
+                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 drop-shadow-lg" />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Dialog */}
@@ -257,14 +250,11 @@ const AdminGallery = () => {
               {editingItem ? "Edit Foto" : "Tambah Foto Baru"}
             </DialogTitle>
             <DialogDescription>
-              {editingItem
-                ? "Perbarui informasi foto"
-                : "Isi form berikut untuk menambahkan foto baru"}
+              {editingItem ? "Perbarui informasi foto" : "Isi form berikut untuk menambahkan foto baru"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Image Upload */}
             <ImageUpload
               value={formData.image_url}
               onChange={(url) => setFormData({ ...formData, image_url: url })}
@@ -348,7 +338,6 @@ const AdminGallery = () => {
             <Button
               onClick={handleSave}
               disabled={createGalleryItem.isPending || updateGalleryItem.isPending}
-              className="bg-secondary hover:bg-secondary/90"
             >
               {createGalleryItem.isPending || updateGalleryItem.isPending ? "Menyimpan..." : "Simpan"}
             </Button>
@@ -362,7 +351,7 @@ const AdminGallery = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Foto?</AlertDialogTitle>
             <AlertDialogDescription>
-              Anda yakin ingin menghapus foto "{deletingItem?.title}"? Tindakan ini tidak dapat dibatalkan.
+              Anda yakin ingin menghapus foto "{deletingItem?.title}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -376,7 +365,7 @@ const AdminGallery = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminMobileLayout>
   );
 };
 

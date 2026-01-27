@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ExternalLink, GripVertical, Edit2, Trash2, Link as LinkIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -15,22 +15,45 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import AdminSidebar from "@/components/AdminSidebar";
-import AdminHeader from "@/components/AdminHeader";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import AdminMobileLayout from "@/components/AdminMobileLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMenus, CreateMenuInput, Menu } from "@/hooks/useMenus";
 import { usePages } from "@/hooks/usePages";
 import { toast } from "sonner";
-import DraggableMenuRow from "@/components/admin/DraggableMenuRow";
 import DynamicIcon from "@/components/DynamicIcon";
+import { motion } from "framer-motion";
 
 const iconOptions = [
   "Link", "Globe", "Home", "FileText", "Calendar", "Image", "Newspaper", "Megaphone", 
@@ -39,8 +62,98 @@ const iconOptions = [
   "Heart", "MapPin", "ExternalLink", "Layers", "LayoutDashboard", "BarChart"
 ];
 
+interface SortableMenuCardProps {
+  menu: Menu & { isChild?: boolean };
+  onEdit: (menu: Menu) => void;
+  onDelete: (menu: Menu) => void;
+}
+
+const SortableMenuCard = ({ menu, onEdit, onDelete }: SortableMenuCardProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: menu.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`mobile-card ${menu.isChild ? "ml-6 border-l-2 border-primary/20" : ""}`}
+    >
+      <div className="flex items-start gap-3">
+        {/* Drag Handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="mt-1 p-1 text-muted-foreground touch-none"
+        >
+          <GripVertical className="w-5 h-5" />
+        </button>
+
+        {/* Icon */}
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <DynamicIcon name={menu.icon || "Link"} className="w-5 h-5 text-primary" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-foreground text-sm truncate">
+              {menu.name}
+            </h3>
+            {menu.target === "_blank" && (
+              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant={menu.is_active ? "default" : "secondary"} className="text-xs">
+              {menu.is_active ? "Aktif" : "Nonaktif"}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {menu.location || "header"}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {menu.url || `/${menu.slug}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 h-9"
+          onClick={() => onEdit(menu)}
+        >
+          <Edit2 className="w-4 h-4 mr-1" />
+          Edit
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 text-destructive hover:text-destructive"
+          onClick={() => onDelete(menu)}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const AdminMenus = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
@@ -68,7 +181,7 @@ const AdminMenus = () => {
     })
   );
 
-  // Get parent menus (menus without parent_id) for dropdown
+  // Get parent menus for dropdown
   const parentMenus = useMemo(() => 
     menus.filter(m => !m.parent_id && m.location === "header"), 
     [menus]
@@ -87,7 +200,6 @@ const AdminMenus = () => {
         .forEach(child => result.push({ ...child, isChild: true }));
     });
     
-    // Add orphan children (children whose parent doesn't exist)
     children
       .filter(child => !parents.find(p => p.id === child.parent_id))
       .forEach(child => result.push(child));
@@ -107,10 +219,10 @@ const AdminMenus = () => {
         name: menu.name,
         slug: menu.slug,
         url: menu.url || "",
-        icon: menu.icon,
-        display_order: menu.display_order,
+        icon: menu.icon || "Link",
+        display_order: menu.display_order || 0,
         is_active: menu.is_active,
-        target: menu.target,
+        target: menu.target || "_self",
         parent_id: menu.parent_id,
         location: menu.location || "header",
       });
@@ -194,7 +306,6 @@ const AdminMenus = () => {
 
     const newOrder = arrayMove(filteredMenus, oldIndex, newIndex);
     
-    // Update display_order for affected menus
     try {
       await Promise.all(
         newOrder.map((menu, index) => 
@@ -208,90 +319,74 @@ const AdminMenus = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Kelola Menu</h1>
-              <p className="text-muted-foreground text-sm">Admin &gt; Kelola Menu • Drag untuk mengubah urutan</p>
-            </div>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <Plus className="w-4 h-4" /> Tambah Menu
-            </Button>
-          </div>
+    <AdminMobileLayout title="Kelola Menu">
+      {/* Search & Add */}
+      <div className="px-4 py-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari menu..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 bg-muted/50 border-0 rounded-xl"
+          />
+        </div>
+        <Button 
+          className="w-full h-11 rounded-xl"
+          onClick={() => handleOpenDialog()}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Tambah Menu
+        </Button>
+        <p className="text-xs text-muted-foreground text-center">
+          Seret untuk mengubah urutan
+        </p>
+      </div>
 
-          <div className="bg-white rounded-xl shadow-card p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Cari menu..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+      {/* Menus List */}
+      <div className="px-4 pb-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="mobile-card flex gap-3">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
               </div>
-            </div>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Nama Menu</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Lokasi</TableHead>
-                    <TableHead>URL</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                      <TableRow key={i}>
-                        <td><Skeleton className="h-4 w-8" /></td>
-                        <td><Skeleton className="h-4 w-40" /></td>
-                        <td><Skeleton className="h-4 w-24" /></td>
-                        <td><Skeleton className="h-4 w-20" /></td>
-                        <td><Skeleton className="h-4 w-32" /></td>
-                        <td><Skeleton className="h-4 w-16" /></td>
-                        <td><Skeleton className="h-4 w-20" /></td>
-                      </TableRow>
-                    ))
-                  ) : filteredMenus.length === 0 ? (
-                    <TableRow>
-                      <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                        {searchQuery ? "Tidak ada menu yang ditemukan" : "Belum ada menu. Klik tombol Tambah Menu untuk membuat menu baru."}
-                      </td>
-                    </TableRow>
-                  ) : (
-                    <SortableContext items={filteredMenus.map(m => m.id)} strategy={verticalListSortingStrategy}>
-                      {filteredMenus.map((menu) => (
-                        <DraggableMenuRow
-                          key={menu.id}
-                          menu={menu}
-                          isChild={'isChild' in menu && menu.isChild}
-                          onEdit={handleOpenDialog}
-                          onDelete={(m) => { setDeletingMenu(m); setDeleteDialogOpen(true); }}
-                        />
-                      ))}
-                    </SortableContext>
-                  )}
-                </TableBody>
-              </Table>
-            </DndContext>
+            ))}
           </div>
-        </main>
+        ) : filteredMenus.length === 0 ? (
+          <div className="text-center py-12">
+            <LinkIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">
+              {searchQuery ? "Tidak ada menu ditemukan" : "Belum ada menu"}
+            </p>
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={filteredMenus.map(m => m.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {filteredMenus.map((menu) => (
+                  <SortableMenuCard
+                    key={menu.id}
+                    menu={menu}
+                    onEdit={handleOpenDialog}
+                    onDelete={(m) => {
+                      setDeletingMenu(m);
+                      setDeleteDialogOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
 
       {/* Dialog Form */}
@@ -300,7 +395,7 @@ const AdminMenus = () => {
           <DialogHeader>
             <DialogTitle>{editingMenu ? "Edit Menu" : "Tambah Menu Baru"}</DialogTitle>
             <DialogDescription>
-              Isi detail menu navigasi. Untuk menautkan ke halaman website, pilih dari dropdown "Pilih Halaman".
+              Isi detail menu navigasi. Untuk menautkan ke halaman website, pilih dari dropdown.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -321,7 +416,6 @@ const AdminMenus = () => {
               />
             </div>
             
-            {/* Page selector for easy linking */}
             {availablePages.length > 0 && (
               <div className="space-y-2">
                 <Label>Pilih Halaman (opsional)</Label>
@@ -351,9 +445,6 @@ const AdminMenus = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Pilih halaman untuk otomatis mengisi URL dengan benar
-                </p>
               </div>
             )}
             
@@ -364,9 +455,6 @@ const AdminMenus = () => {
                 onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                 placeholder="/pages/nama-halaman atau https://..."
               />
-              <p className="text-xs text-muted-foreground">
-                Format: /pages/slug untuk halaman internal, atau URL lengkap untuk link eksternal
-              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -375,7 +463,7 @@ const AdminMenus = () => {
                   <SelectTrigger>
                     <SelectValue>
                       <div className="flex items-center gap-2">
-                        <DynamicIcon name={formData.icon} className="w-4 h-4" />
+                        <DynamicIcon name={formData.icon || "Link"} className="w-4 h-4" />
                         <span>{formData.icon}</span>
                       </div>
                     </SelectValue>
@@ -394,13 +482,13 @@ const AdminMenus = () => {
               </div>
               <div className="space-y-2">
                 <Label>Target</Label>
-                <Select value={formData.target} onValueChange={(value) => setFormData({ ...formData, target: value })}>
+                <Select value={formData.target || "_self"} onValueChange={(value) => setFormData({ ...formData, target: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_self">Buka di Tab Sama</SelectItem>
-                    <SelectItem value="_blank">Buka di Tab Baru</SelectItem>
+                    <SelectItem value="_self">Tab Sama</SelectItem>
+                    <SelectItem value="_blank">Tab Baru</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -429,7 +517,7 @@ const AdminMenus = () => {
                     <SelectValue placeholder="Pilih parent..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— Tidak ada (Menu Utama) —</SelectItem>
+                    <SelectItem value="none">— Tidak ada —</SelectItem>
                     {parentMenus
                       .filter(p => p.id !== editingMenu?.id)
                       .map((parent) => (
@@ -441,20 +529,12 @@ const AdminMenus = () => {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Urutan Tampil</Label>
-              <Input
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-              />
-            </div>
             <div className="flex items-center gap-3">
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
-              <Label>Aktif</Label>
+              <Label>Aktif (tampil di website)</Label>
             </div>
           </div>
           <DialogFooter>
@@ -472,7 +552,7 @@ const AdminMenus = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Menu</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus menu "{deletingMenu?.name}"? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus menu "{deletingMenu?.name}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -483,7 +563,7 @@ const AdminMenus = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminMobileLayout>
   );
 };
 
