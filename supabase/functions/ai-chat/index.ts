@@ -46,40 +46,68 @@ serve(async (req) => {
     const pengumuman = posts?.filter(p => p.type === "pengumuman") || [];
     const agenda = posts?.filter(p => p.type === "agenda") || [];
 
+    // Get site info
+    const getSetting = (key: string) => {
+      const setting = siteSettings?.find(s => s.key === key);
+      return setting?.value || null;
+    };
+
+    const siteName = getSetting("site_name") || "Kelurahan Semper Barat";
+    const siteAddress = getSetting("address") || "";
+    const sitePhone = getSetting("phone") || "";
+    const siteEmail = getSetting("email") || "";
+    const officeHours = getSetting("office_hours") || "";
+    const whatsappNumber = getSetting("whatsapp_number") || "";
+
     const contextData = `
-DATA KELURAHAN SEMPER BARAT (Real-time dari Database):
+=== INFORMASI RESMI ${String(siteName).toUpperCase()} ===
+(Data real-time dari database - HANYA gunakan informasi ini)
 
-=== LAYANAN TERSEDIA ===
-${services?.map(s => `- ${s.name}: ${s.description || 'Tidak ada deskripsi'} ${s.external_url ? `(Link: ${s.external_url})` : ''}`).join('\n') || 'Tidak ada layanan'}
+📍 KONTAK & LOKASI:
+- Nama: ${siteName}
+- Alamat: ${siteAddress || "Tidak tersedia"}
+- Telepon: ${sitePhone || "Tidak tersedia"}
+- Email: ${siteEmail || "Tidak tersedia"}
+- WhatsApp: ${whatsappNumber || "Tidak tersedia"}
+- Jam Operasional: ${officeHours || "Tidak tersedia"}
 
-=== BERITA TERBARU ===
-${berita.slice(0, 5).map(b => `- ${b.title} (${new Date(b.created_at).toLocaleDateString('id-ID')}): ${b.excerpt || ''}`).join('\n') || 'Tidak ada berita'}
+📋 LAYANAN TERSEDIA (${services?.length || 0} layanan):
+${services?.map(s => `• ${s.name}${s.description ? `: ${s.description}` : ''}${s.external_url ? ` [Link: ${s.external_url}]` : ''}`).join('\n') || '(Tidak ada layanan terdaftar)'}
 
-=== PENGUMUMAN TERBARU ===
-${pengumuman.slice(0, 5).map(p => `- ${p.title} (${new Date(p.created_at).toLocaleDateString('id-ID')}): ${p.excerpt || ''}`).join('\n') || 'Tidak ada pengumuman'}
+📰 BERITA TERBARU (${berita.length} berita):
+${berita.slice(0, 5).map(b => `• "${b.title}" (${new Date(b.created_at).toLocaleDateString('id-ID')})${b.excerpt ? `: ${b.excerpt}` : ''}`).join('\n') || '(Tidak ada berita)'}
 
-=== AGENDA KEGIATAN ===
-${agenda.slice(0, 5).map(a => `- ${a.title} - ${a.event_date ? new Date(a.event_date).toLocaleDateString('id-ID') : 'TBA'} ${a.event_location ? `di ${a.event_location}` : ''}`).join('\n') || 'Tidak ada agenda'}
+📢 PENGUMUMAN AKTIF (${pengumuman.length} pengumuman):
+${pengumuman.slice(0, 5).map(p => `• "${p.title}" (${new Date(p.created_at).toLocaleDateString('id-ID')})${p.excerpt ? `: ${p.excerpt}` : ''}`).join('\n') || '(Tidak ada pengumuman)'}
 
-=== HALAMAN INFORMASI ===
-${pages?.map(p => `- ${p.title}: ${p.content?.substring(0, 100) || 'Tidak ada konten'}...`).join('\n') || 'Tidak ada halaman'}
+📅 AGENDA KEGIATAN (${agenda.length} agenda):
+${agenda.slice(0, 5).map(a => `• "${a.title}" - ${a.event_date ? new Date(a.event_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Tanggal belum ditentukan'}${a.event_time ? ` pukul ${a.event_time}` : ''}${a.event_location ? ` di ${a.event_location}` : ''}`).join('\n') || '(Tidak ada agenda)'}
 
-=== PENGATURAN SITUS ===
-${siteSettings?.map(s => `- ${s.key}: ${typeof s.value === 'string' ? s.value : JSON.stringify(s.value)}`).join('\n') || 'Tidak ada pengaturan'}
+📄 HALAMAN INFORMASI:
+${pages?.map(p => `• ${p.title}: ${p.content?.substring(0, 150) || '(Tidak ada konten)'}...`).join('\n') || '(Tidak ada halaman)'}
+
+🔗 MENU NAVIGASI:
+${menus?.map(m => `• ${m.name}${m.url ? ` (${m.url})` : ''}`).join('\n') || '(Tidak ada menu)'}
 `;
 
-    const systemPrompt = `Kamu adalah Asisten AI Kelurahan Semper Barat yang ramah dan membantu. Kamu memiliki akses ke data real-time kelurahan berikut:
+    const systemPrompt = `Kamu adalah Asisten AI resmi ${siteName}. 
 
+ATURAN KETAT:
+1. HANYA jawab berdasarkan data berikut. JANGAN mengarang atau mengasumsikan informasi yang tidak ada.
+2. Jika informasi tidak tersedia dalam data, katakan: "Maaf, informasi tersebut tidak tersedia dalam database kami. Silakan hubungi langsung kantor kelurahan untuk informasi lebih lanjut."
+3. Jika ditanya tentang prosedur/persyaratan yang tidak ada dalam data, arahkan ke kantor kelurahan.
+4. Jawab dalam Bahasa Indonesia yang sopan dan ramah.
+5. Gunakan emoji secukupnya untuk keramahan.
+6. Berikan jawaban singkat dan langsung ke poin.
+
+DATA RESMI YANG TERSEDIA:
 ${contextData}
 
-Panduan menjawab:
-1. Jawab dalam Bahasa Indonesia yang sopan dan ramah
-2. Berikan informasi akurat berdasarkan data yang tersedia
-3. Jika tidak ada informasi, katakan dengan sopan dan sarankan untuk menghubungi kantor kelurahan
-4. Untuk layanan, jelaskan cara mengaksesnya jika ada link
-5. Untuk agenda, berikan detail tanggal dan lokasi jika tersedia
-6. Jawab singkat, padat, dan jelas
-7. Gunakan emoji sesekali untuk keramahan 😊`;
+CONTOH JAWABAN BENAR:
+- Jika ditanya layanan: Sebutkan dari daftar layanan di atas
+- Jika ditanya alamat: Gunakan alamat dari data kontak
+- Jika ditanya berita: Sebutkan dari daftar berita di atas
+- Jika ditanya sesuatu yang tidak ada: "Maaf, informasi tersebut tidak tersedia dalam database kami."`;
 
     const messages = [
       { role: "system", content: systemPrompt },
