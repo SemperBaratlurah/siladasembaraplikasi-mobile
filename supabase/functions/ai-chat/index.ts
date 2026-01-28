@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationHistory = [] } = await req.json();
+    const { message, conversationHistory = [], stream = false } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -87,7 +87,7 @@ Panduan menjawab:
       { role: "user", content: message }
     ];
 
-    console.log("Calling Lovable AI Gateway...");
+    console.log("Calling Lovable AI Gateway...", stream ? "(streaming)" : "(non-streaming)");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -100,6 +100,7 @@ Panduan menjawab:
         messages,
         max_tokens: 1000,
         temperature: 0.7,
+        stream: stream,
       }),
     });
 
@@ -124,6 +125,22 @@ Panduan menjawab:
       throw new Error(`AI Gateway error: ${response.status}`);
     }
 
+    // Handle streaming response
+    if (stream) {
+      console.log("Streaming response started");
+      
+      const streamHeaders = {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      };
+
+      // Pass through the stream from the AI gateway
+      return new Response(response.body, { headers: streamHeaders });
+    }
+
+    // Non-streaming response
     const data = await response.json();
     const reply = data.choices[0]?.message?.content || "Maaf, terjadi kesalahan.";
 
