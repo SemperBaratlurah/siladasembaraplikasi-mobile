@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -14,9 +14,9 @@ serve(async (req) => {
   try {
     const { message, conversationHistory = [] } = await req.json();
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     // Initialize Supabase client
@@ -87,14 +87,16 @@ Panduan menjawab:
       { role: "user", content: message }
     ];
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    console.log("Calling Lovable AI Gateway...");
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "google/gemini-3-flash-preview",
         messages,
         max_tokens: 1000,
         temperature: 0.7,
@@ -102,13 +104,30 @@ Panduan menjawab:
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("OpenAI API error:", error);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Lovable AI Gateway error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Terlalu banyak permintaan. Silakan coba lagi nanti." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Kredit AI habis. Silakan hubungi admin." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
     const reply = data.choices[0]?.message?.content || "Maaf, terjadi kesalahan.";
+
+    console.log("AI response received successfully");
 
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
