@@ -4,7 +4,7 @@ import { useServices } from "@/hooks/useServices";
 import { usePage } from "@/hooks/usePages";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DynamicIcon from "@/components/DynamicIcon";
 
 const colorMap: Record<string, string> = {
@@ -19,15 +19,17 @@ const MAX_PREVIEW_SERVICES = 6;
 const ServicesSection = () => {
   const { services, isLoading, incrementClick } = useServices();
   const { page } = usePage("layanan-digital");
+  const navigate = useNavigate();
   
   // Limit to preview count for homepage
   const previewServices = services.slice(0, MAX_PREVIEW_SERVICES);
   const hasMoreServices = services.length > MAX_PREVIEW_SERVICES;
 
-  const handleServiceClick = async (serviceId: string, externalUrl?: string | null) => {
+  const handleServiceClick = async (serviceId: string, serviceName: string, externalUrl?: string | null) => {
     await incrementClick(serviceId);
     if (externalUrl) {
-      window.open(externalUrl, "_blank", "noopener,noreferrer");
+      // Open in in-app WebView instead of external browser
+      navigate(`/webview?url=${encodeURIComponent(externalUrl)}&title=${encodeURIComponent(serviceName)}`);
     }
   };
 
@@ -84,7 +86,7 @@ const ServicesSection = () => {
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="card-service group cursor-pointer"
-                  onClick={() => handleServiceClick(service.id, service.external_url)}
+                  onClick={() => handleServiceClick(service.id, service.name, service.external_url)}
                 >
                   <div className="flex items-start gap-4">
                     <div
