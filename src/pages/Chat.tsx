@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Send, ArrowLeft, Bot, User } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePublicSiteSettings } from "@/hooks/usePublicSiteSettings";
 import { useVisitTracker } from "@/hooks/useVisitTracker";
@@ -24,7 +23,9 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const { settings, isLoading: settingsLoading } = usePublicSiteSettings();
   const isAIChatEnabled = settings.ai_chat_enabled === true;
@@ -34,32 +35,93 @@ const Chat = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, streamingContent]);
 
-  const sendMessage = async () => {
+  const parseSSEData = (data: string): string => {
+    try {
+      const parsed = JSON.parse(data);
+      return parsed.choices?.[0]?.delta?.content || "";
+    } catch {
+      return "";
+    }
+  };
+
+  const sendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setStreamingContent("");
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController();
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: {
-          message: userMessage.content,
-          conversationHistory: messages,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            message: userMessage.content,
+            conversationHistory: messages,
+            stream: true,
+          }),
+          signal: abortControllerRef.current.signal,
+        }
+      );
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal mengirim pesan");
+      }
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.reply || "Maaf, terjadi kesalahan.",
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Streaming tidak didukung");
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") continue;
+            
+            const content = parseSSEData(data);
+            if (content) {
+              fullContent += content;
+              setStreamingContent(fullContent);
+            }
+          }
+        }
+      }
+
+      // Add complete message to history
+      if (fullContent) {
+        setMessages((prev) => [...prev, { role: "assistant", content: fullContent }]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "Maaf, tidak ada respons dari server. 😔" },
+        ]);
+      }
     } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        console.log("Request cancelled");
+        return;
+      }
       console.error("Chat error:", error);
       toast.error("Gagal mengirim pesan. Silakan coba lagi.");
       setMessages((prev) => [
@@ -68,8 +130,10 @@ const Chat = () => {
       ]);
     } finally {
       setIsLoading(false);
+      setStreamingContent("");
+      abortControllerRef.current = null;
     }
-  };
+  }, [input, isLoading, messages]);
 
   const quickQuestions = [
     "Apa saja layanan yang tersedia?",
@@ -222,7 +286,27 @@ const Chat = () => {
             </motion.div>
           ))}
           
-          {isLoading && (
+          {/* Streaming response */}
+          {isLoading && streamingContent && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-2 justify-start"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-primary/20">
+                <img src={chatBotIcon} alt="Bot" className="w-full h-full object-cover" />
+              </div>
+              <div className="max-w-[80%] bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-md">
+                <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:m-0 [&_ul]:my-1 [&_ol]:my-1">
+                  <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                  <span className="inline-block w-1.5 h-4 bg-primary animate-pulse ml-0.5" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Loading indicator when no content yet */}
+          {isLoading && !streamingContent && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
