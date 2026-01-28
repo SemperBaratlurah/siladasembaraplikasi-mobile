@@ -18,6 +18,7 @@ import Pengumuman from "./pages/Pengumuman";
 import PengumumanDetail from "./pages/PengumumanDetail";
 import PageDetail from "./pages/PageDetail";
 import Chat from "./pages/Chat";
+import WebView from "./pages/WebView";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminNews from "./pages/admin/AdminNews";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/pengumuman" element={<Pengumuman />} />
           <Route path="/pengumuman/:slug" element={<PengumumanDetail />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/webview" element={<WebView />} />
           <Route path="/pages/:slug" element={<PageDetail />} />
           
           {/* Protected Admin Routes */}

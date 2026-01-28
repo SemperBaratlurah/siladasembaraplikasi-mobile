@@ -3,7 +3,7 @@ import { ExternalLink, ChevronRight } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DynamicIcon from "@/components/DynamicIcon";
 
 const colorMap: Record<string, string> = {
@@ -15,11 +15,13 @@ const colorMap: Record<string, string> = {
 
 const MobileServicesGrid = () => {
   const { services, isLoading, incrementClick } = useServices();
+  const navigate = useNavigate();
 
-  const handleServiceClick = async (serviceId: string, externalUrl?: string | null) => {
+  const handleServiceClick = async (serviceId: string, serviceName: string, externalUrl?: string | null) => {
     await incrementClick(serviceId);
     if (externalUrl) {
-      window.open(externalUrl, "_blank", "noopener,noreferrer");
+      // Open in in-app WebView instead of external browser
+      navigate(`/webview?url=${encodeURIComponent(externalUrl)}&title=${encodeURIComponent(serviceName)}`);
     }
   };
 
@@ -73,7 +75,7 @@ const MobileServicesGrid = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
-              onClick={() => handleServiceClick(service.id, service.external_url)}
+              onClick={() => handleServiceClick(service.id, service.name, service.external_url)}
               className="mobile-card-interactive text-left"
             >
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center mb-3`}>
